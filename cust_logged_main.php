@@ -51,12 +51,23 @@
     <div class="header">
         <button onclick="location.href='login.php'">Login</button>
     </div>
-    <div class="content">
         <?php
-            echo "<pre>";
-            print_r($_SESSION);
-            echo "</pre>";
+            session_start();
+            include 'db.php';
+            try{
+                $dbh = connectDB();
+                $statement = $dbh->prepare("SELECT firstname FROM Customer WHERE username = :username");
+                $statement -> bindParam(":username", $_SESSION["username"]);
+                $statement->execute();
+                $first_name = $statement->fetch();
+                echo "<div> Welcome " . $first_name[0] . "</div>";
+                
+            }
+            catch(Exception $e){
+                echo "Could not connect to database";
+            }
         ?>
+    <div class="content">
         <form method="GET">
             <label for="category">Select Category:</label>
             <select name="category" id="category">

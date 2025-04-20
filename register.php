@@ -2,6 +2,11 @@
 require "db.php";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (isset($_POST["cancel"])) {
+        // Cancel button was pressed just redirect back to clear form
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit;
+    }
     // Validate form inputs
     $username = $_POST["username"];
     $password = $_POST["password"];
@@ -53,7 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 <body>
 <h1>Register</h1>
-<form method="post" action="register.php">
+<form method="post" action="register.php" id="postForm">
     <label for="username"><b>Username:</b></label>
     <input type="text" name="username" required>
     <br><br>
@@ -76,12 +81,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <textarea name="shipping_address" required></textarea>
     <br><br>
     <button type="submit">Register</button>
+    <button type="button" name="cancel" onclick="cancelForm()">Cancel</button>
+    <br><br>
 </form>
 <!-- Button to redirect to the login page -->
 <form method="get" action="login.php">
     <button type="submit">Go to Login</button>
 </form>
+<script>
+function cancelForm() {
+    document.getElementById("postForm").reset();
+    window.location.href = "register.php"; // Optional: reload page to clear any messages
+}
+</script>
 <?php
+
+
 if (isset($error)) {
     echo '<p style="color:red">' . $error . '</p>';
 }
