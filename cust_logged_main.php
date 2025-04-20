@@ -51,33 +51,44 @@
     <div class="header">
         <button onclick="location.href='login.php'">Login</button>
     </div>
+    <div class="content">
         <?php
             session_start();
+            // Include the database connection file
             include 'db.php';
-            try{
+
+            // Fetch categories from the database
+            try {
                 $dbh = connectDB();
                 $statement = $dbh->prepare("SELECT firstname FROM Customer WHERE username = :username");
                 $statement -> bindParam(":username", $_SESSION["username"]);
+                //Issue the welcome statement
                 $statement->execute();
-                $first_name = $statement->fetch();
-                echo "<div> Welcome " . $first_name[0] . "</div>";
+                $result = $statement->fetch(PDO::FETCH_ASSOC);
+                if ($result && isset($result["firstname"])) {
+                    echo "<div> Welcome " . htmlspecialchars($result["firstname"]) . "</div>";
+                }
+                else{
+                    echo "<div>Please log in to see your name.</div>";
+                }
                 
             }
-            catch(Exception $e){
-                echo "Could not connect to database";
+            catch (PDOException $e) {
+                echo "<option value=\"\">Error loading categories</option>";
             }
         ?>
-    <div class="content">
+        
         <form method="GET">
+            <br>
+            <button type="submit" name="view_order">View Orders</button>
+            <button type="button" name="shopping_cart">Shopping Cart</button>
+            <button type="button" name="change_password">Change Password</button>
+            <button type="button" name="logout">Logout</button>
+            <br><br>
             <label for="category">Select Category:</label>
             <select name="category" id="category">
                 <?php
-                // Include the database connection file
-                include 'db.php';
-
-                // Fetch categories from the database
-                try {
-                    $dbh = connectDB();
+                try{
                     $statement = $dbh->prepare("SELECT Cat_name FROM Category");
                     $statement->execute();
                     $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
@@ -87,8 +98,7 @@
                         $catName = htmlspecialchars($category['Cat_name']);
                         $isSelected = ($catName === $selectedCategory) ? 'selected' : '';
                         echo "<option value=\"$catName\" $isSelected>$catName</option>";
-                    
-}
+                    }
                 } catch (PDOException $e) {
                     echo "<option value=\"\">Error loading categories</option>";
                 }
@@ -97,7 +107,63 @@
             <div class="search">
                 <button type="submit" name="search">Search</button>
                 <?php
-                if (isset($_GET['category'])) {
+                if(isset($_GET["view_order"])){
+                    try{
+                        $dbh = connectDB();
+                        $statement = $dbh->prepare("SELECT id FROM Customer WHERE username = :username");
+                        $statement->bindParam(':username', $_SESSION['username']);
+                        $statement->execute();
+                        $result = $statement->fetch(PDO::FETCH_ASSOC);
+                        $id = $result["id"];
+
+                        $statement = $dbh->prepare("SELECT Order_ID, order_date, total FROM C_Order WHERE C_id = :id");
+                        $statement->bindParam(':id', $id);
+                        $statement->execute();
+                        $result = $statement->fetchAll(PDO::FETCH_ASSOC);
+                        if($result){
+                            echo "<div> Here are your (id: $id) orders:";
+                            $count = 1;
+                            foreach ($result as $order){
+                                //Outside of table logic
+                                echo "<br>$count)
+                                    &nbsp;&nbsp;&nbsp; ID: " . $order['Order_ID'] . 
+                                    "<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date: " . $order['order_date'] . 
+                                    "<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Total: " . $order["total"];
+                                $count = $count+1;
+
+                                //Inside of table logic
+                                $statement = $dbh->prepare("SELECT product_id, Prod_Name, Price, quantity FROM Order_Item JOIN Product ON Order_Item.product_id=Product.id WHERE Order_ID = :order");
+                                $statement->bindParam(":order", $order['Order_ID']);
+                                $statement->execute();
+                                $products = $statement->fetchAll(PDO::FETCH_ASSOC);
+                                echo "<table border='1' cellpadding='8' cellspacing='0'>
+                                            <tr>
+                                                <td> Product ID </td>
+                                                <td> Product Name </td>
+                                                <td> Price </td>
+                                                <td> Quantity </td>
+                                            </tr>";
+                                foreach ($products as $product){
+                                    echo "  <tr> 
+                                                <td>" . $product['product_id'] . "</td>
+                                                <td>" . $product['Prod_Name'] . "</td>
+                                                <td>" . $product["Price"] . "</td>
+                                                <td>" . $product['quantity'] . "</td>
+                                            </tr>";
+                                }
+                                echo "</table>";
+                            }
+                            echo "</div>";
+                        }
+                        else{
+                            echo "No Orders Placed";
+                        }
+                    }
+                    catch(Exception $e){
+                        echo "<p>Error: " . htmlspecialchars($e->getMessage()) . "</p>";
+                    }
+                }
+                else if (isset($_GET['category'])) {
                     $selectedCategory = $_GET['category'];
 
                     try {
