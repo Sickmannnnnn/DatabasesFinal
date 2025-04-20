@@ -2,7 +2,7 @@
 function connectDB()
 {
     // Use the absolute path to your db.ini file
-    $config = parse_ini_file("/local/my_web_files/kdliddle/db.ini");
+    $config = parse_ini_file("/local/my_web_files/zrsickma/db.ini");
     $dbh = new PDO($config['dsn'], $config['username'], $config['password']);
     $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     return $dbh;

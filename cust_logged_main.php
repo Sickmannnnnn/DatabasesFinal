@@ -52,6 +52,11 @@
         <button onclick="location.href='login.php'">Login</button>
     </div>
     <div class="content">
+        <?php
+            echo "<pre>";
+            print_r($_SESSION);
+            echo "</pre>";
+        ?>
         <form method="GET">
             <label for="category">Select Category:</label>
             <select name="category" id="category">
