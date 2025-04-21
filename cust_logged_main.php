@@ -113,6 +113,7 @@
                                 </tr>";
                     }
                     echo "</table>";
+                    echo "<br><button type='submit' name='checkout'>Check Out</button>";
                     echo "</form>";
                 }else{
                     echo "<p style='color:red'>You must login to see your cart</p>";
@@ -151,6 +152,42 @@
                     }
                     catch (Exception $e){
                         echo "<p style='color: red;'>Error removing product: " . htmlspecialchars($e->getMessage()) . "</p>";
+                    }
+                }
+                if (isset($_POST['checkout'])){
+                    try {
+                        // Step 1: Set the output variables
+                        $dbh->prepare("SET @order_id = NULL;")->execute();
+                        $dbh->prepare("SET @out_stock = NULL;")->execute();
+                    
+                        // Step 2: Prepare the CALL statement
+                        $stmt = $dbh->prepare("CALL checkout(:cust_id, @order_id, @out_stock)");
+                        $stmt->bindParam(":cust_id", $customer_id, PDO::PARAM_INT);
+                        $stmt->execute();
+
+                        $stmt->closeCursor();
+                    
+                        // Step 3: Retrieve output values
+                        $result = $dbh->query("SELECT @order_id AS order_id, @out_stock AS out_stock");
+                        $output = $result->fetch(PDO::FETCH_ASSOC);
+                    
+                        if ($output) {
+                            echo "Order ID: " . $output['order_id'] . "<br>";
+                            if(isset($output['out_stock']) && $output['out_stock'] != -1){
+                                echo "Insufficient quantity of product with ID: " . $output['out_stock'];
+                                echo "<br>Please remove this product from your cart to continue";
+                            }
+                            else if(isset($output['out_stock'])){
+                                echo "Your cart is empty";
+                            }
+                            else{
+                                echo "Checkout Successful";
+                            }
+                        } else {
+                            echo "No output returned.";
+                        }
+                    } catch (PDOException $e) {
+                        echo "Error: " . htmlspecialchars($e->getMessage());
                     }
                 }
             }
