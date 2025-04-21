@@ -12,7 +12,7 @@ function connectDB()
 function authenticate($user, $passwd) {
     try {
         $dbh = connectDB();
-        $statement = $dbh->prepare("SELECT count(*) FROM lab8_customer WHERE username = :username AND password = sha2(:passwd,256)");
+        $statement = $dbh->prepare("SELECT count(*) FROM Customer WHERE username = :username AND passwd = sha2(:passwd,256)");
         $statement->bindParam(":username", $user);
         $statement->bindParam(":passwd", $passwd);
         $statement->execute();
