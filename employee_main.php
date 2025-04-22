@@ -235,6 +235,11 @@
             echo $e;
         }
     }
+    else if(isset($_GET['logout'])){
+        header('Location: employee_login.php');
+        session_destroy();
+        exit();
+    }
 ?>
 <form method="GET">
     
@@ -243,6 +248,7 @@
     <button type="submit" name="change_price">Change Product Price</button>
     <button type="submit" name="stock_history">Stock History</button>
     <button type="submit" name="price_history">Price History</button>
+    <button type="submit" name="logout">Logout</button>
     <br><br>
 
 </form>
