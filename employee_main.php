@@ -52,6 +52,35 @@
             $statement->bindParam(":new_stock", $new_stock);
             $statement->bindParam(":prod_name", $prod_name);
             $statement->execute();
+            //Insert Stock change into Product History table
+                    //Find the product id
+                    $prod_statement = $dbh->prepare("SELECT id, Stock_NUM FROM Product WHERE Prod_Name = :prod_name");
+                    $prod_statement->bindParam(":prod_name", $prod_name);
+                    $prod_statement->execute();
+                    $prod_result = $prod_statement->fetch(PDO::FETCH_ASSOC);
+                    $product_id = $prod_result['id'];
+                    //find current datetime
+                    $currentDateTime = date("Y-m-d H:i:s");
+                    //Find Old Stock
+                    $old_stock = $stock_result["Stock_NUM"];
+                    //Find stock amount
+                    $stock = $prod_result['Stock_NUM'];
+                    //find price
+                    $price_statement = $dbh->prepare("SELECT Price FROM Product WHERE Prod_Name = :prod_name");
+                    $price_statement->bindParam(":prod_name", $prod_name);
+                    $price_statement->execute();
+                    $price_result = $price_statement->fetch(PDO::FETCH_ASSOC);
+                    $price = $price_result['Price'];
+                    //Find Employee ID
+                    $emp_id = 714153;
+                $statement = $dbh->prepare("INSERT INTO Product_History VALUES (:product_id, :date_time, 'Update', :price, :price, :old_stock, :new_stock, :emp_id, 'Employee', NULL)");
+                $statement->bindParam("product_id", $product_id);
+                $statement->bindParam(":date_time", $currentDateTime);
+                $statement->bindParam(":old_stock", $old_stock);
+                $statement->bindParam(":new_stock", $new_stock);
+                $statement->bindParam(":price", $stock);
+                $statement->bindParam(":emp_id", $emp_id);
+                $statement->execute();
             echo "<p style='color: green'>$prod_name restocked to $new_stock</p>";
         }
     }
@@ -91,12 +120,38 @@
             }
             
             if(isset($_POST['submit'])){
+                //Update the product table
                 $prod_name = $_POST['category'];
                 $statement = $dbh->prepare("UPDATE Product SET Price = :new_price WHERE Prod_Name = :prod_name");
                 $new_price = $_POST['new_price'];
                 $statement->bindParam(":new_price", $new_price);
                 $statement->bindParam(":prod_name", $prod_name);
                 $statement->execute();
+
+                //Insert Price change into Product History table
+                    //Find the product id
+                    $prod_statement = $dbh->prepare("SELECT id, Stock_NUM FROM Product WHERE Prod_Name = :prod_name");
+                    $prod_statement->bindParam(":prod_name", $prod_name);
+                    $prod_statement->execute();
+                    $prod_result = $prod_statement->fetch(PDO::FETCH_ASSOC);
+                    $product_id = $prod_result['id'];
+                    //find current datetime
+                    $currentDateTime = date("Y-m-d H:i:s");
+                    //Find Old Price
+                    $oldPrice = $old_price['Price'];
+                    //Find stock amount
+                    $stock = $prod_result['Stock_NUM'];
+                    //Find Employee ID
+                    $emp_id = 714153;
+                $statement = $dbh->prepare("INSERT INTO Product_History VALUES (:product_id, :date_time, 'Update', :old_price, :new_price, :stock, :stock, :emp_id, 'Employee', NULL)");
+                $statement->bindParam("product_id", $product_id);
+                $statement->bindParam(":date_time", $currentDateTime);
+                $statement->bindParam(":old_price", $oldPrice);
+                $statement->bindParam(":new_price", $new_price);
+                $statement->bindParam(":stock", $stock);
+                $statement->bindParam(":emp_id", $emp_id);
+                $statement->execute();
+                //Success Message
                 echo "<p style='color: green'>$prod_name price to $new_price</p>";
                 
             }
