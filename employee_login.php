@@ -2,7 +2,21 @@
 
 require "db.php"; // must define connectDB() and authenticate()
 session_start();
-
+function Employee_authenticate($user, $passwd) {
+    try {
+        $dbh = connectDB();
+        $statement = $dbh->prepare("SELECT count(*) FROM Employee WHERE username = :username AND passwd = sha2(:passwd,256)");
+        $statement->bindParam(":username", $user);
+        $statement->bindParam(":passwd", $passwd);
+        $statement->execute();
+        $row = $statement->fetch();
+        $dbh = null;
+        return $row[0];
+    } catch (PDOException $e) {
+        print "Error! " . $e->getMessage() . "<br/>";
+        die();
+    }
+}
 
 function isDefaultPassword($username, $password) {
     $firstInitial = strtoupper($username[0]);
@@ -28,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     //$username = $_POST["username"] ?? '';
     //$password = $_POST["password"] ?? '';
 
-    if (authenticate($_POST["username"], $_POST["password"]) == 1) {
+    if (Employee_authenticate($_POST["username"], $_POST["password"]) == 1) {
         // Set session variable and redirect to the main page
         $_SESSION["username"] = $_POST["username"];
 
