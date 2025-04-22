@@ -91,6 +91,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <label for="username">Enter username:</label>
     <input id="username" name="username" type="text" required value="<?= htmlspecialchars($_POST['username'] ?? '') ?>">
     <br>
+    <br>
 
     <label for="password">Enter password:</label>
     <input id="password" name="password" type="password" required>
