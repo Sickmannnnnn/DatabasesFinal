@@ -1,61 +1,71 @@
 <?php
 session_start();
-require "db.php"; // Include the database connection file
+require "db.php";
 
-if (!isset($_SESSION["username"])) {
+// must be logged in
+if (empty($_SESSION["username"])) {
     header("Location: employee_login.php");
     exit;
 }
 
+$username = $_SESSION["username"];
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $newPassword = $_POST["new_password"];
-    $confirmPassword = $_POST["confirm_password"];
+    $newPassword     = $_POST["new_password"]     ?? '';
+    $confirmPassword = $_POST["confirm_password"] ?? '';
 
-    if ($newPassword === $confirmPassword && !empty($newPassword)) {
+    if (empty($newPassword)) {
+        $error = "New password cannot be blank.";
+    } elseif ($newPassword !== $confirmPassword) {
+        $error = "Passwords do not match.";
+    } else {
         try {
-            $dbh = connectDB(); // Connect to the database
+            $dbh = connectDB();
+            $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
 
-            // Update the password in the database
-            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-            $stmt = $dbh->prepare("UPDATE Employee SET passwd = :newPassword WHERE username = :username");
-            $stmt->bindParam(":newPassword", $hashedPassword);
-            $stmt->bindParam(":username", $_SESSION["username"]);
-            $stmt->execute();
+            $stmt = $dbh->prepare(
+              "UPDATE employees
+               SET password    = :p,
+                   first_login = 0
+               WHERE username = :u"
+            );
+            $stmt->execute([
+              ':p' => $hashed,
+              ':u' => $username
+            ]);
 
-            // Redirect to the main page after successful password reset
+            // Done — send them to the main page
             header("Location: employee_main.php");
             exit;
+
         } catch (PDOException $e) {
-            $error = "Error updating password: " . $e->getMessage();
+            $error = "Database error: " . htmlspecialchars($e->getMessage());
         }
-    } else {
-        $error = "Passwords do not match or are empty.";
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Password</title>
+  <meta charset="UTF-8">
+  <title>Reset Password – eStore</title>
 </head>
 <body>
-    <h1>Reset Your Password</h1>
-    <form method="POST" action="">
-        <label for="new_password">Enter new password:</label>
-        <input type="password" id="new_password" name="new_password" required>
-        <br>
-        <label for="confirm_password">Confirm new password:</label>
-        <input type="password" id="confirm_password" name="confirm_password" required>
-        <br>
-        <button type="submit">Reset Password</button>
-    </form>
-    <?php
-    if (isset($error)) {
-        echo '<p style="color:red">' . htmlspecialchars($error) . '</p>';
-    }
-    ?>
+  <h1>Welcome to eStore!</h1>
+  <form method="post">
+    <p>You must reset your password before continuing.</p>
+
+    <label for="new_password">Enter new password:</label>
+    <input id="new_password" name="new_password" type="password" required>
+    <br>
+    <label for="confirm_password">Enter new password again:</label>
+    <input id="confirm_password" name="confirm_password" type="password" required>
+    <br>
+    <button type="submit">Reset Password</button>
+  </form>
+
+  <?php if (!empty($error)): ?>
+    <p style="color:red;"><?= htmlspecialchars($error) ?></p>
+  <?php endif; ?>
 </body>
 </html>

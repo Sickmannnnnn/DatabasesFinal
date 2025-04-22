@@ -50,6 +50,7 @@
 <body>
     <div class="header">
         <button onclick="location.href='login.php'">Login</button>
+        <button onclick="location.href='employee_login.php'" style="margin-left: 10px;">Employee Login</button>
     </div>
     <div class="content">
         <form method="GET">

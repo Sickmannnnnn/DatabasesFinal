@@ -111,7 +111,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <?php endif; ?>
 
     <button type="submit"><?= $showResetFields ? 'Reset Password' : 'Login' ?></button>
+    <br><br>
   </form>
+
+  <button type="button" onclick="window.location.href='cust_main.php'">Go to Customer Main</button>
+  <br><br>
 
   <?php if (!empty($error)): ?>
     <p style="color:red;"><?= htmlspecialchars($error) ?></p>
