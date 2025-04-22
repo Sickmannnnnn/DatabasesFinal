@@ -54,6 +54,55 @@
             echo "<p style='color: green'>$prod_name restocked to $new_stock</p>";
         }
     }
+    else if(isset($_GET['change_price'])){
+        echo "<div class='boxed'>";
+        echo"<form method='POST'>
+            <label for='category'>Select Product:</label>
+            <select name='category' id='category'>";
+        // Fetch categories from the database
+        try {
+            $dbh = connectDB();
+            $statement = $dbh->prepare("SELECT Prod_Name FROM Product");
+            $statement->execute();
+            $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
+            $selectedCategory = $_POST['category'] ?? '';
+
+            foreach ($categories as $category) {
+                $prodName = htmlspecialchars($category['Prod_Name']);
+                $isSelected = ($prodName === $selectedCategory) ? 'selected' : '';
+                echo "<option value=\"$prodName\" $isSelected>$prodName</option>";
+            
+            }
+        } catch (PDOException $e) {
+            echo "<option value=\"\">Error loading categories</option>";
+        }
+        echo "</select>";
+        echo "<br><br><button type='submit' name='go'>Go</button>";
+        if(isset($_POST['category'])){
+            $prod_name = $_POST['category'];
+            $price_statement = $dbh->prepare("SELECT Price FROM Product WHERE Prod_Name = :prod_name");
+            $price_statement->bindParam(":prod_name", $prod_name);
+            $price_statement->execute();
+            $old_price = $price_statement->fetch(PDO::FETCH_ASSOC);
+            if(!isset($_POST['submit'])){
+                echo "<br><br><label>New Price  </label><input type='decimal' name='new_price' value=".$old_price['Price']." min=0>";
+                echo "<br><br><button type='submit' name='submit'>Change Price</button>";
+            }
+            
+            if(isset($_POST['submit'])){
+                $prod_name = $_POST['category'];
+                $statement = $dbh->prepare("UPDATE Product SET Price = :new_price WHERE Prod_Name = :prod_name");
+                $new_price = $_POST['new_price'];
+                $statement->bindParam(":new_price", $new_price);
+                $statement->bindParam(":prod_name", $prod_name);
+                $statement->execute();
+                echo "<p style='color: green'>$prod_name price to $new_price</p>";
+                
+            }
+            echo "</form>";
+        }
+        echo "</div>";
+    }
 ?>
 <form method="GET">
     
