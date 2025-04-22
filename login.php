@@ -30,7 +30,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <br><br>
     <button type="submit">Login</button> &nbsp;&nbsp;&nbsp;
     <button type="button" onclick="location.href='register.php'">Register</button>
-    
+    <br><br>
+    <button type="button" onclick="location.href='employee_login.php'">Employee Login</button>
 </form>
 <?php
 if (isset($error)) {
