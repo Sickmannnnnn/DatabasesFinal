@@ -180,28 +180,22 @@
             echo "<h3>Stock Change History</h3>";
             echo "<table border='1' cellpadding='8' cellspacing='0'>
                     <tr>
-                        <td>Product ID</td>
                         <td>Date Time</td>
-                        <td>Action Type</td>
                         <td>Old Stock</td>
                         <td>New Stock</td>
-                        <td>Updated By</td>
-                        <td>Updated Role</td>
-                        <td>Order ID</td>
+                        <td>Change</td>
                     </tr>";
             foreach($records as $record){
-                if($record['old_stock'] != $record['new_stock'])
-                echo 
-                    "<tr>
-                        <td>" . $record['product_id'] . "</td>
-                        <td>" . $record['date_time'] . "</td>
-                        <td>" . $record['action_type'] . "</td>
-                        <td>" . $record['old_stock'] . "</td>
-                        <td>" . $record['new_stock'] . "</td>
-                        <td>" . $record['updated_by'] . "</td>
-                        <td>" . $record['updated_role'] . "</td>
-                        <td>" . $record['order_id'] . "</td>
-                    </tr>";
+                if($record['old_stock'] != $record['new_stock']){
+                    $change = $record['new_stock'] - $record['old_stock'];
+                    echo 
+                        "<tr>
+                            <td>" . $record['date_time'] . "</td>
+                            <td>" . $record['old_stock'] . "</td>
+                            <td>" . $record['new_stock'] . "</td>
+                            <td>" . $change . "</td>
+                        </tr>";
+                }
             }
             echo "</table>";
         }
@@ -218,28 +212,22 @@
             echo "<h3>Price Change History</h3>";
             echo "<table border='1' cellpadding='8' cellspacing='0'>
                     <tr>
-                        <td>Product ID</td>
                         <td>Date Time</td>
-                        <td>Action Type</td>
                         <td>Old Price</td>
                         <td>New Price</td>
-                        <td>Updated By</td>
-                        <td>Updated Role</td>
-                        <td>Order ID</td>
+                        <td>Percent Change</td>
                     </tr>";
             foreach($records as $record){
-                if($record['old_price'] != $record['new_price'])
-                echo 
-                    "<tr>
-                        <td>" . $record['product_id'] . "</td>
-                        <td>" . $record['date_time'] . "</td>
-                        <td>" . $record['action_type'] . "</td>
-                        <td>" . $record['old_price'] . "</td>
-                        <td>" . $record['new_price'] . "</td>
-                        <td>" . $record['updated_by'] . "</td>
-                        <td>" . $record['updated_role'] . "</td>
-                        <td>" . $record['order_id'] . "</td>
-                    </tr>";
+                if($record['old_price'] != $record['new_price']){
+                    $percentage = round($record['new_price'] / $record['old_price'] * 100 - 100, 2);
+                    echo 
+                        "<tr>
+                            <td>" . $record['date_time'] . "</td>
+                            <td>" . $record['old_price'] . "</td>
+                            <td>" . $record['new_price'] . "</td>
+                            <td>" . $percentage . "%</td>
+                        </tr>";
+                }
             }
             echo "</table>";
         }
