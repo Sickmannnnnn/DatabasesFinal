@@ -172,71 +172,127 @@
         echo "</div>";
     }
     else if(isset($_GET['stock_history'])){
-        try{
-            $dbh = connectDB();
-            $statement = $dbh->prepare("SELECT * FROM Product_History");
-            $statement->execute();
-            $records = $statement->fetchAll(PDO::FETCH_ASSOC);
-            echo "<h3>Stock Change History</h3>";
-            echo "<table border='1' cellpadding='8' cellspacing='0'>
-                    <tr>
-                        <td>Product ID</td>
-                        <td>Date Time</td>
-                        <td>Old Stock</td>
-                        <td>New Stock</td>
-                        <td>Change</td>
-                    </tr>";
-            foreach($records as $record){
-                if($record['old_stock'] != $record['new_stock']){
-                    $change = $record['new_stock'] - $record['old_stock'];
-                    echo 
-                        "<tr>
-                            <td>" . $record['product_id'] . "</td>
-                            <td>" . $record['date_time'] . "</td>
-                            <td>" . $record['old_stock'] . "</td>
-                            <td>" . $record['new_stock'] . "</td>
-                            <td>" . $change . "</td>
-                        </tr>";
+        echo "<form method='GET'>
+                <input type='hidden' name='stock_history' value='1'>
+                <label>Product ID  </label>
+                <select name='category' id='category'>";
+                // Fetch categories from the database
+                try {
+                    $dbh = connectDB();
+                    $statement = $dbh->prepare("SELECT id FROM Product");
+                    $statement->execute();
+                    $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
+                    $selectedCategory = $_GET['category'] ?? '';
+
+                    foreach ($categories as $category) {
+                        $prodID = htmlspecialchars($category['id']);
+                        $isSelected = ($prodID === $selectedCategory) ? 'selected' : '';
+                        echo "<option value=\"$prodID\" $isSelected>$prodID</option>";
+                        
+                    }
+                    
+                } catch (PDOException $e) {
+                    echo "<option value=\"\">Error loading categories".$e."</option>";
                 }
+                echo "</select>";
+                echo "<br><br>
+                <button type='submit' name='stock_history_view'>Search</button>
+            </form>";
+        if(isset($_GET['category'])){
+            try{
+                $dbh = connectDB();
+                $statement = $dbh->prepare("SELECT * FROM Product_History WHERE product_id = :prod_id");
+                
+                $statement->bindParam(":prod_id", $_GET['category']);
+                $statement->execute();
+                $records = $statement->fetchAll(PDO::FETCH_ASSOC);
+                echo "<h3>Stock Change History for " . $_GET['category'] . "</h3>";
+                echo "<table border='1' cellpadding='8' cellspacing='0'>
+                        <tr>
+                            <td>Date Time</td>
+                            <td>Old Stock</td>
+                            <td>New Stock</td>
+                            <td>Change</td>
+                        </tr>";
+                foreach($records as $record){
+                    if($record['old_stock'] != $record['new_stock']){
+                        $change = $record['new_stock'] - $record['old_stock'];
+                        echo 
+                            "<tr>
+                                <td>" . $record['date_time'] . "</td>
+                                <td>" . $record['old_stock'] . "</td>
+                                <td>" . $record['new_stock'] . "</td>
+                                <td>" . $change . "</td>
+                            </tr>";
+                    }
+                }
+                echo "</table>";
             }
-            echo "</table>";
-        }
-        catch(Exception $e){
-            echo $e;
+            catch(Exception $e){
+                echo $e;
+            }
         }
     }
     else if(isset($_GET['price_history'])){
-        try{
-            $dbh = connectDB();
-            $statement = $dbh->prepare("SELECT * FROM Product_History");
-            $statement->execute();
-            $records = $statement->fetchAll(PDO::FETCH_ASSOC);
-            echo "<h3>Price Change History</h3>";
-            echo "<table border='1' cellpadding='8' cellspacing='0'>
-                    <tr>
-                        <td>Product ID</td>
-                        <td>Date Time</td>
-                        <td>Old Price</td>
-                        <td>New Price</td>
-                        <td>Percent Change</td>
-                    </tr>";
-            foreach($records as $record){
-                if($record['old_price'] != $record['new_price']){
-                    $percentage = round($record['new_price'] / $record['old_price'] * 100 - 100, 2);
-                    echo 
-                        "<tr>
-                            <td>" . $record['product_id'] . "</td>
-                            <td>" . $record['date_time'] . "</td>
-                            <td>" . $record['old_price'] . "</td>
-                            <td>" . $record['new_price'] . "</td>
-                            <td>" . $percentage . "%</td>
-                        </tr>";
+        echo "<form method='GET'>
+                <input type='hidden' name='price_history' value='1'>
+                <label>Product ID  </label>
+                <select name='category' id='category'>";
+                // Fetch categories from the database
+                try {
+                    $dbh = connectDB();
+                    $statement = $dbh->prepare("SELECT id FROM Product");
+                    $statement->execute();
+                    $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
+                    $selectedCategory = $_GET['category'] ?? '';
+
+                    foreach ($categories as $category) {
+                        $prodID = htmlspecialchars($category['id']);
+                        $isSelected = ($prodID === $selectedCategory) ? 'selected' : '';
+                        echo "<option value=\"$prodID\" $isSelected>$prodID</option>";
+                        
+                    }
+                    
+                } catch (PDOException $e) {
+                    echo "<option value=\"\">Error loading categories".$e."</option>";
                 }
+                echo "</select>
+                <br><br>
+                <button type='submit' name='price_history_view'>Search</button>
+            </form>";
+            
+        if(isset($_GET['category'])){
+            try{
+                $dbh = connectDB();
+                $statement = $dbh->prepare("SELECT * FROM Product_History WHERE product_id = :prod_id");
+                $statement->bindParam(":prod_id", $_GET['category']);
+                $statement->execute();
+                $records = $statement->fetchAll(PDO::FETCH_ASSOC);
+                echo "<h3>Price Change History</h3>";
+                echo "<table border='1' cellpadding='8' cellspacing='0'>
+                        <tr>
+                            <td>Date Time</td>
+                            <td>Old Price</td>
+                            <td>New Price</td>
+                            <td>Percent Change</td>
+                        </tr>";
+                foreach($records as $record){
+                    if($record['old_price'] != $record['new_price']){
+                        $percentage = round($record['new_price'] / $record['old_price'] * 100 - 100, 2);
+                        echo 
+                            "<tr>
+                                <td>" . $record['date_time'] . "</td>
+                                <td>" . $record['old_price'] . "</td>
+                                <td>" . $record['new_price'] . "</td>
+                                <td>" . $percentage . "%</td>
+                            </tr>";
+                    }
+                }
+                echo "</table>";
             }
-            echo "</table>";
-        }
-        catch(Exception $e){
-            echo $e;
+            catch(Exception $e){
+                echo $e;
+            }
         }
     }
     else if(isset($_GET['logout'])){
