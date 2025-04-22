@@ -1,7 +1,7 @@
 <?php
-
 require "db.php"; // must define connectDB() and authenticate()
 session_start();
+
 function Employee_authenticate($user, $passwd) {
     try {
         $dbh = connectDB();
@@ -26,11 +26,17 @@ function isDefaultPassword($username, $password) {
 }
 
 function updatePassword($username, $newPassword) {
-    $conn = connectDB();
-    $stmt = $conn->prepare("UPDATE Employee SET password = ? WHERE username = ?");
-    $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
-    $stmt->bind_param("ss", $hashed, $username);
-    return $stmt->execute();
+    try {
+        $dbh = connectDB();
+        $hashed = hash("sha256", $newPassword); // Keep consistent with authenticate()
+        $stmt = $dbh->prepare("UPDATE Employee SET passwd = :hashed WHERE username = :username");
+        $stmt->bindParam(":hashed", $hashed);
+        $stmt->bindParam(":username", $username);
+        return $stmt->execute();
+    } catch (PDOException $e) {
+        error_log("Password update failed: " . $e->getMessage());
+        return false;
+    }
 }
 
 
@@ -39,12 +45,11 @@ $showResetFields = false;
 
 // If form submitted
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    //$username = $_POST["username"] ?? '';
-    //$password = $_POST["password"] ?? '';
+    $username = $_POST["username"];
+    $password = $_POST["password"];
 
-    if (Employee_authenticate($_POST["username"], $_POST["password"]) == 1) {
-        // Set session variable and redirect to the main page
-        $_SESSION["username"] = $_POST["username"];
+    if (Employee_authenticate($username, $password) == 1) {
+        $_SESSION["username"] = $username;
 
         if (isDefaultPassword($username, $password)) {
             $showResetFields = true;
@@ -56,7 +61,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 if ($newPassword !== $confirmPassword) {
                     $error = "New passwords do not match.";
                 } else {
-                    // Update password in database (you need to implement updatePassword in db.php)
                     if (updatePassword($username, $newPassword)) {
                         header("Location: employee_main.php");
                         exit;
@@ -79,14 +83,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
   <meta charset="UTF-8">
   <title>Employee Login – eStore</title>
-  <script>
-    function toggleResetFields(show) {
-      document.getElementById('reset_fields').style.display = show ? 'block' : 'none';
-    }
-  </script>
 </head>
 <body>
   <h1>Welcome to eStore!</h1>
+
   <form method="post">
     <label for="username">Enter username:</label>
     <input id="username" name="username" type="text" required value="<?= htmlspecialchars($_POST['username'] ?? '') ?>">
@@ -97,16 +97,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <br>
 
     <?php if ($showResetFields): ?>
-    <div id="reset_fields">
-      <p>You must reset your password before continuing.</p>
-      <label for="new_password">Enter new password:</label>
-      <input id="new_password" name="new_password" type="password" required>
-      <br>
+      <div id="reset_fields">
+        <p>You must reset your password before continuing.</p>
 
-      <label for="confirm_password">Enter new password again:</label>
-      <input id="confirm_password" name="confirm_password" type="password" required>
-      <br>
-    </div>
+        <label for="new_password">Enter new password:</label>
+        <input id="new_password" name="new_password" type="password" required>
+        <br>
+
+        <label for="confirm_password">Enter new password again:</label>
+        <input id="confirm_password" name="confirm_password" type="password" required>
+        <br>
+      </div>
     <?php endif; ?>
 
     <button type="submit"><?= $showResetFields ? 'Reset Password' : 'Login' ?></button>
