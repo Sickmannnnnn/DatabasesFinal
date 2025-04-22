@@ -14,9 +14,11 @@
 <?php
     // Include the database connection file
     include 'db.php';
+    session_start();
     if(isset($_GET["restock"])){
         echo "<div class='boxed'>";
-        echo"<form method='POST'>
+        echo"<form method='GET'>
+            <input type='hidden' name='restock' value='1'>
             <label for='category'>Select Product:</label>
             <select name='category' id='category'>";
         // Fetch categories from the database
@@ -25,7 +27,7 @@
             $statement = $dbh->prepare("SELECT Prod_Name FROM Product");
             $statement->execute();
             $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
-            $selectedCategory = $_POST['category'] ?? '';
+            $selectedCategory = $_GET['category'] ?? '';
 
             foreach ($categories as $category) {
                 $prodName = htmlspecialchars($category['Prod_Name']);
@@ -38,26 +40,61 @@
         }
         echo "</select>";
         echo "<br><br><label>Restock Amount  </label><input type='number' name='restock_quantity' value=0 min=0>";
-        echo "<br><br><button type='submit' name='submit'>Submit</button>";
+        echo "<br><br><button type='submit' name='restock_product_submit'>Submit</button>";
         echo "</form>";
         echo "</div>";
-        if(isset($_POST['submit'])){
+        if(isset($_GET['restock_product_submit'])){
             $statement = $dbh->prepare("UPDATE Product SET Stock_NUM = :new_stock WHERE Prod_Name = :prod_name");
             $stock_statement = $dbh->prepare("SELECT Stock_NUM FROM Product WHERE Prod_Name = :prod_name");
-            $prod_name = $_POST['category'];
+            $prod_name = $_GET['category'];
             $stock_statement->bindParam(":prod_name", $prod_name);
             $stock_statement->execute();
             $stock_result = $stock_statement->fetch(PDO::FETCH_ASSOC);
-            $new_stock = $stock_result['Stock_NUM'] + $_POST['restock_quantity'];
+            $new_stock = $stock_result['Stock_NUM'] + $_GET['restock_quantity'];
             $statement->bindParam(":new_stock", $new_stock);
             $statement->bindParam(":prod_name", $prod_name);
             $statement->execute();
+            //Insert Stock change into Product History table
+                    //Find the product id
+                    $prod_statement = $dbh->prepare("SELECT id, Stock_NUM FROM Product WHERE Prod_Name = :prod_name");
+                    $prod_statement->bindParam(":prod_name", $prod_name);
+                    $prod_statement->execute();
+                    $prod_result = $prod_statement->fetch(PDO::FETCH_ASSOC);
+                    $product_id = $prod_result['id'];
+                    //find current datetime
+                    $currentDateTime = date("Y-m-d H:i:s");
+                    //Find Old Stock
+                    $old_stock = $stock_result["Stock_NUM"];
+                    //Find stock amount
+                    $stock = $prod_result['Stock_NUM'];
+                    //find price
+                    $price_statement = $dbh->prepare("SELECT Price FROM Product WHERE Prod_Name = :prod_name");
+                    $price_statement->bindParam(":prod_name", $prod_name);
+                    $price_statement->execute();
+                    $price_result = $price_statement->fetch(PDO::FETCH_ASSOC);
+                    $price = $price_result['Price'];
+                    //Find Employee ID
+                    //Find Employee ID
+                    $id_statement = $dbh->prepare("SELECT id FROM Employee WHERE username=:username");
+                    $id_statement->bindParam(":username", $_SESSION['username']);
+                    $id_statement->execute();
+                    $id_result = $id_statement->fetch(PDO::FETCH_ASSOC);
+                    $emp_id = $id_result['id'];
+                $statement = $dbh->prepare("INSERT INTO Product_History VALUES (:product_id, :date_time, 'Update', :price, :price, :old_stock, :new_stock, :emp_id, 'Employee', NULL)");
+                $statement->bindParam("product_id", $product_id);
+                $statement->bindParam(":date_time", $currentDateTime);
+                $statement->bindParam(":old_stock", $old_stock);
+                $statement->bindParam(":new_stock", $new_stock);
+                $statement->bindParam(":price", $stock);
+                $statement->bindParam(":emp_id", $emp_id);
+                $statement->execute();
             echo "<p style='color: green'>$prod_name restocked to $new_stock</p>";
         }
     }
     else if(isset($_GET['change_price'])){
         echo "<div class='boxed'>";
-        echo"<form method='POST'>
+        echo"<form method='GET'>
+            <input type='hidden' name='change_price' value='1'>
             <label for='category'>Select Product:</label>
             <select name='category' id='category'>";
         // Fetch categories from the database
@@ -66,7 +103,7 @@
             $statement = $dbh->prepare("SELECT Prod_Name FROM Product");
             $statement->execute();
             $categories = $statement->fetchAll(PDO::FETCH_ASSOC);
-            $selectedCategory = $_POST['category'] ?? '';
+            $selectedCategory = $_GET['category'] ?? '';
 
             foreach ($categories as $category) {
                 $prodName = htmlspecialchars($category['Prod_Name']);
@@ -79,24 +116,54 @@
         }
         echo "</select>";
         echo "<br><br><button type='submit' name='go'>Go</button>";
-        if(isset($_POST['category'])){
-            $prod_name = $_POST['category'];
+        if(isset($_GET['category'])){
+            $prod_name = $_GET['category'];
             $price_statement = $dbh->prepare("SELECT Price FROM Product WHERE Prod_Name = :prod_name");
             $price_statement->bindParam(":prod_name", $prod_name);
             $price_statement->execute();
             $old_price = $price_statement->fetch(PDO::FETCH_ASSOC);
-            if(!isset($_POST['submit'])){
+            if(isset($_GET['go'])){
                 echo "<br><br><label>New Price  </label><input type='decimal' name='new_price' value=".$old_price['Price']." min=0>";
-                echo "<br><br><button type='submit' name='submit'>Change Price</button>";
+                echo "<br><br><button type='submit' name='change_price_submit'>Change Price</button>";
             }
             
-            if(isset($_POST['submit'])){
-                $prod_name = $_POST['category'];
+            if(isset($_GET['change_price_submit'])){
+                //Update the product table
+                $prod_name = $_GET['category'];
                 $statement = $dbh->prepare("UPDATE Product SET Price = :new_price WHERE Prod_Name = :prod_name");
-                $new_price = $_POST['new_price'];
+                $new_price = $_GET['new_price'];
                 $statement->bindParam(":new_price", $new_price);
                 $statement->bindParam(":prod_name", $prod_name);
                 $statement->execute();
+
+                //Insert Price change into Product History table
+                    //Find the product id
+                    $prod_statement = $dbh->prepare("SELECT id, Stock_NUM FROM Product WHERE Prod_Name = :prod_name");
+                    $prod_statement->bindParam(":prod_name", $prod_name);
+                    $prod_statement->execute();
+                    $prod_result = $prod_statement->fetch(PDO::FETCH_ASSOC);
+                    $product_id = $prod_result['id'];
+                    //find current datetime
+                    $currentDateTime = date("Y-m-d H:i:s");
+                    //Find Old Price
+                    $oldPrice = $old_price['Price'];
+                    //Find stock amount
+                    $stock = $prod_result['Stock_NUM'];
+                    //Find Employee ID
+                    $id_statement = $dbh->prepare("SELECT id FROM Employee WHERE username=:username");
+                    $id_statement->bindParam(":username", $_SESSION['username']);
+                    $id_statement->execute();
+                    $id_result = $id_statement->fetch(PDO::FETCH_ASSOC);
+                    $emp_id = $id_result['id'];
+                $statement = $dbh->prepare("INSERT INTO Product_History VALUES (:product_id, :date_time, 'Update', :old_price, :new_price, :stock, :stock, :emp_id, 'Employee', NULL)");
+                $statement->bindParam("product_id", $product_id);
+                $statement->bindParam(":date_time", $currentDateTime);
+                $statement->bindParam(":old_price", $oldPrice);
+                $statement->bindParam(":new_price", $new_price);
+                $statement->bindParam(":stock", $stock);
+                $statement->bindParam(":emp_id", $emp_id);
+                $statement->execute();
+                //Success Message
                 echo "<p style='color: green'>$prod_name price to $new_price</p>";
                 
             }
@@ -188,7 +255,6 @@
     <button type="submit" name="change_price">Change Product Price</button>
     <button type="submit" name="stock_history">Stock History</button>
     <button type="submit" name="price_history">Price History</button>
-    <button type="button" onclick="window.location.href='employee_login.php'">Return to Login</button>
     <br><br>
 
 </form>
