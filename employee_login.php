@@ -1,8 +1,9 @@
 <?php
-session_start();
-require "db.php"; // Include the database connection file
 
-// Function to check if the password is the default one
+require "db.php"; // must define connectDB() and authenticate()
+session_start();
+
+
 function isDefaultPassword($username, $password) {
     $firstInitial = strtoupper($username[0]);
     $lastInitial = strtoupper($username[1]);
@@ -10,20 +11,47 @@ function isDefaultPassword($username, $password) {
     return $password === $defaultPassword;
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = $_POST["username"];
-    $password = $_POST["password"];
+function updatePassword($username, $newPassword) {
+    $conn = connectDB();
+    $stmt = $conn->prepare("UPDATE Employee SET password = ? WHERE username = ?");
+    $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
+    $stmt->bind_param("ss", $hashed, $username);
+    return $stmt->execute();
+}
 
-    // Use the authenticate function from db.php
-    if (authenticate($username, $password) == 1) {
+
+$error = "";
+$showResetFields = false;
+
+// If form submitted
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    //$username = $_POST["username"] ?? '';
+    //$password = $_POST["password"] ?? '';
+
+    if (authenticate($_POST["username"], $_POST["password"]) == 1) {
+        // Set session variable and redirect to the main page
+        $_SESSION["username"] = $_POST["username"];
+
         if (isDefaultPassword($username, $password)) {
-            // Redirect to password reset page if default password is detected
-            $_SESSION["username"] = $username;
-            header("Location: reset_password.php");
-            exit;
+            $showResetFields = true;
+
+            if (!empty($_POST["new_password"]) && !empty($_POST["confirm_password"])) {
+                $newPassword = $_POST["new_password"];
+                $confirmPassword = $_POST["confirm_password"];
+
+                if ($newPassword !== $confirmPassword) {
+                    $error = "New passwords do not match.";
+                } else {
+                    // Update password in database (you need to implement updatePassword in db.php)
+                    if (updatePassword($username, $newPassword)) {
+                        header("Location: employee_main.php");
+                        exit;
+                    } else {
+                        $error = "Password update failed.";
+                    }
+                }
+            }
         } else {
-            // Set session variable and redirect to the main page
-            $_SESSION["username"] = $username;
             header("Location: employee_main.php");
             exit;
         }
@@ -32,29 +60,46 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Login</title>
+  <meta charset="UTF-8">
+  <title>Employee Login – eStore</title>
+  <script>
+    function toggleResetFields(show) {
+      document.getElementById('reset_fields').style.display = show ? 'block' : 'none';
+    }
+  </script>
 </head>
 <body>
-    <h1>Welcome to eStore!</h1>
-    <form method="POST" action="">
-        <label for="username">Enter username:</label>
-        <input type="text" id="username" name="username" required>
-        <br>
-        <label for="password">Enter password:</label>
-        <input type="password" id="password" name="password" required>
-        <br>
-        <button type="submit">Login</button>
-    </form>
-    <?php
-    if (isset($error)) {
-        echo '<p style="color:red">' . htmlspecialchars($error) . '</p>';
-    }
-    ?>
+  <h1>Welcome to eStore!</h1>
+  <form method="post">
+    <label for="username">Enter username:</label>
+    <input id="username" name="username" type="text" required value="<?= htmlspecialchars($_POST['username'] ?? '') ?>">
+    <br>
+
+    <label for="password">Enter password:</label>
+    <input id="password" name="password" type="password" required>
+    <br>
+
+    <?php if ($showResetFields): ?>
+    <div id="reset_fields">
+      <p>You must reset your password before continuing.</p>
+      <label for="new_password">Enter new password:</label>
+      <input id="new_password" name="new_password" type="password" required>
+      <br>
+
+      <label for="confirm_password">Enter new password again:</label>
+      <input id="confirm_password" name="confirm_password" type="password" required>
+      <br>
+    </div>
+    <?php endif; ?>
+
+    <button type="submit"><?= $showResetFields ? 'Reset Password' : 'Login' ?></button>
+  </form>
+
+  <?php if (!empty($error)): ?>
+    <p style="color:red;"><?= htmlspecialchars($error) ?></p>
+  <?php endif; ?>
 </body>
 </html>
